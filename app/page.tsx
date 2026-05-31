@@ -1,0 +1,567 @@
+
+"use client";
+
+import { useState } from "react";
+import { useEffect } from "react";
+import Image from "next/image";
+
+const startingFriends = [
+  { id: "1", name: "Christie Lewis", phone: "801-319-6210" },
+ 
+];
+
+
+const times = [
+  "9:00 AM",
+  "9:30 AM",
+  "10:00 AM",
+  "10:30 AM",
+  "11:00 AM",
+  "11:30 AM",
+  "12:00 PM",
+  "12:30 PM",
+  "1:00 PM",
+  "1:30 PM",
+  "2:00 PM",
+  "2:30 PM",
+  "3:00 PM",
+  "3:30 PM",
+  "4:00 PM",
+  "4:30 PM",
+  "5:00 PM",
+  "5:30 PM",
+  "6:00 PM",
+  "6:30 PM",
+  "7:00 PM",
+  "7:30 PM",
+  "8:00 PM",
+  "8:30 PM",
+  "9:00 PM",
+];
+
+const resetAllData = () => {
+  localStorage.clear();
+  window.location.reload();
+};
+export default function Home() {
+  
+  const [weekOffset, setWeekOffset] = useState(0);
+
+function getWeekDays() {
+  const today = new Date("2026-05-24");
+  const day = today.getDay();
+  const mondayOffset = day === 0 ? -6 : 1 - day;
+
+  const monday = new Date(today);
+  monday.setDate(today.getDate() + mondayOffset + weekOffset * 7);
+
+  return Array.from({ length: 7 }, (_, index) => {
+    const date = new Date(monday);
+    date.setDate(monday.getDate() + index);
+
+   const weekdayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+return `${weekdayNames[date.getDay()]} ${date.getDate()}`;
+  });
+}
+
+const [friends, setFriends] = useState(startingFriends);
+  
+const days = getWeekDays();
+
+useEffect(() => {
+  const savedFriends = localStorage.getItem("mahjongFriends");
+  if (savedFriends) {
+    setFriends(JSON.parse(savedFriends));
+  }
+}, []);
+
+
+
+  const [newName, setNewName] = useState("");
+  const [newPhone, setNewPhone] = useState("");
+  const [selectedFriendId, setSelectedFriendId] = useState("1");
+  const [availability, setAvailability] = useState<Record<string, string[]>>({});
+  const [hosts, setHosts] = useState<Record<string, string>>({});
+  const [hostAddresses, setHostAddresses] = useState<Record<string, string>>({});
+  useEffect(() => {
+  const savedHosts = localStorage.getItem("mahjongHosts");
+  if (savedHosts) {
+    setHosts(JSON.parse(savedHosts));
+  }
+
+  const savedHostAddresses = localStorage.getItem("mahjongHostAddresses");
+  if (savedHostAddresses) {
+    setHostAddresses(JSON.parse(savedHostAddresses));
+  }
+}, []);
+  const [selectedSlot, setSelectedSlot] = useState("");
+  const [hostName, setHostName] = useState("");
+const [hostAddress, setHostAddress] = useState("");
+const [showPopup, setShowPopup] = useState(false);
+useEffect(() => {
+  const savedAvailability = localStorage.getItem("mahjongAvailability");
+
+  if (savedAvailability) {
+    setAvailability(JSON.parse(savedAvailability));
+  }
+}, []);
+useEffect(() => {
+  localStorage.setItem("mahjongAvailability", JSON.stringify(availability));
+}, [availability]);
+  function toggleSlot(slot: string) {
+    const current = availability[selectedFriendId] || [];
+    const isSelected = current.includes(slot);
+
+    if (!isSelected && countAvailable(slot) >= 8) {
+      setSelectedSlot(slot);
+      return;
+    }
+
+    setAvailability({
+      ...availability,
+      [selectedFriendId]: isSelected
+        ? current.filter((item) => item !== slot)
+        : [...current, slot],
+    });
+
+    setSelectedSlot(slot);
+  }
+
+  function countAvailable(slot: string) {
+    return friends.filter((friend) => availability[friend.id]?.includes(slot)).length;
+  }
+
+  function availableFriends(slot: string) {
+    return friends.filter((friend) => availability[friend.id]?.includes(slot));
+  }
+
+  function volunteerHost() {
+    if (!selectedSlot) return;
+    setHosts({
+      ...hosts,
+      [selectedSlot]: selectedFriendId,
+    });
+  }
+
+  const selectedAvailable = selectedSlot ? availableFriends(selectedSlot) : [];
+  const host = selectedSlot ? friends.find((friend) => friend.id === hosts[selectedSlot]) : null;
+
+  return (
+  <main
+  style={{
+    padding: 20,
+    fontFamily: "Arial, sans-serif",
+    maxWidth: 850,
+    margin: "0 auto",
+  }}
+>
+
+ 
+
+    <div
+      style={{
+    position: "relative",
+    marginBottom: 24,
+    borderRadius: 20,
+    overflow: "hidden",
+  }}
+>
+<img
+  src="/mahjong-header-4.png"
+ style={{
+  width: "100%",
+  maxWidth: 850,
+  height: "auto",
+  display: "block",
+  borderRadius: 20,
+  margin: "0 auto",
+}}
+/>
+
+  <div
+    style={{
+      position: "absolute",
+      inset: 0,
+      background: "transparent",
+      display: "flex",
+      flexDirection: "column",
+      justifyContent: "flex-end",
+      padding: 24,
+    }}
+  >
+ 
+
+  
+  </div>
+</div>
+<div style={{ marginBottom: 18 }}>
+  <h2 style={{ marginBottom: 6 }}>REGISTER here if you'd like to join our group</h2>
+
+  
+</div>
+     
+      <div style={{ marginBottom: 20 }}>
+  <input
+    placeholder="Player name"
+    value={newName}
+    onChange={(e) => setNewName(e.target.value)}
+    style={{ padding: 8, marginRight: 8 }}
+  />
+
+  <input
+    placeholder="Phone number"
+    value={newPhone}
+    onChange={(e) => setNewPhone(e.target.value)}
+    style={{ padding: 8, marginRight: 8 }}
+  />
+
+  <button
+    onClick={() => {
+      if (!newName) return;
+
+     const updatedFriends = [
+  ...friends,
+  {
+    id: Date.now().toString(),
+    name: newName,
+    phone: newPhone,
+  },
+];
+
+setFriends(updatedFriends);
+localStorage.setItem("mahjongFriends", JSON.stringify(updatedFriends));
+
+      setNewName("");
+      setNewPhone("");
+    }}
+  >
+    Add Player
+  </button>
+</div>
+
+
+<p>
+  SCROLL RIGHT to select your name, then CLICK on times you are available in a minimum of a 90 MINUTE BLOCK.
+  <br />
+  SCROLL DOWN to sign up to host or remove yourself from a time block.
+</p>
+      {[...friends]
+  .sort((a, b) =>
+    a.name.localeCompare(b.name)
+  )
+  .map((friend) => (
+        <button
+          key={friend.id}
+          onClick={() => setSelectedFriendId(friend.id)}
+          style={{
+            margin: 4,
+            padding: "10px 14px",
+            borderRadius: 20,
+            border: "1px solid #999",
+            background: selectedFriendId === friend.id ? "#123" : "#eee",
+            color: selectedFriendId === friend.id ? "white" : "black",
+          }}
+        >
+          {friend.name}
+        </button>
+      ))}
+
+      <h2>Schedule</h2>
+      <div style={{ marginBottom: 12 }}>
+  <button onClick={() => setWeekOffset(weekOffset - 1)}>← Previous Week</button>
+  <button onClick={() => setWeekOffset(weekOffset + 1)} style={{ marginLeft: 10 }}>
+    Next Week →
+  </button>
+</div>
+      <div style={{ overflowX: "auto" }}>
+        <table style={{ borderCollapse: "collapse", minWidth: 600 }}>
+          <thead>
+            <tr>
+              <th style={cellStyle}>Time</th>
+              {days.map((day) => (
+                <th key={day} style={cellStyle}>{day}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {times.map((time) => (
+              <tr key={time}>
+                <td style={cellStyle}>{time}</td>
+                {days.map((day) => {
+                  const slot = `${day} ${time}`;
+                  const count = countAvailable(slot);
+                  const mine = availability[selectedFriendId]?.includes(slot);
+                  const hasHost = hosts[slot];
+
+                  return (
+                    <td
+                      key={slot}
+onClick={() => {
+  const current = availability[selectedFriendId] || [];
+
+  if (!current.includes(slot)) {
+    toggleSlot(slot);
+  }
+
+  setSelectedSlot(slot);
+  setShowPopup(true);
+}}
+
+
+
+                      style={{
+                        ...cellStyle,
+                        cursor: "pointer",
+background:
+  count >= 4
+    ? "#b7eb8f"
+    : mine
+    ? "#b7d7ff"
+    : count === 3
+    ? "#ffe7ba"
+    : count === 2
+    ? "#fff1b8"
+    : count === 1
+    ? "#fffbe6"
+    : "white",
+                      }}
+                    >
+                      <strong>{count}/8</strong>
+                      <br />
+ {hasHost
+  ? `🏠 ${hosts[slot]?.split(" ")[0]}`
+  : count >= 4
+  ? "Host needed"
+  : "Open"}
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {selectedSlot && (
+        <section style={{ marginTop: 20, padding: 15, border: "1px solid #ccc", borderRadius: 12 }}>
+          <h2>{selectedSlot}</h2>
+          <p>Players available: {selectedAvailable.length}/8</p>
+
+          {selectedAvailable.length >= 4 && !host && (
+            <div style={{ background: "#fff1b8", padding: 12, borderRadius: 10 }}>
+              <strong>This game has enough players.</strong>
+              
+             
+            </div>
+          )}
+
+  {!hosts[selectedSlot] && (
+  <div
+    style={{
+      background: "#fff1b8",
+      padding: 12,
+      borderRadius: 10,
+    }}
+  >
+    
+
+   <p><strong>I can host this game</strong></p>
+
+    <input
+      placeholder="Your name"
+      value={hostName}
+      onChange={(e) => setHostName(e.target.value)}
+      style={{
+        width: "100%",
+        padding: 4,
+        marginBottom: 4,
+        borderRadius: 6,
+      }}
+    />
+
+    <input
+      placeholder="Host address"
+      value={hostAddress}
+      onChange={(e) => setHostAddress(e.target.value)}
+      style={{
+        width: "100%",
+       padding: 4,
+        marginBottom: 4,
+        borderRadius: 6,
+      }}
+    />
+
+    <button
+      onClick={() => {
+ const updatedHosts = { ...hosts };
+const updatedHostAddresses = { ...hostAddresses };
+
+const currentSlots = availability[selectedFriendId] || [];
+
+const selectedIndex = times.findIndex((time) =>
+  selectedSlot.endsWith(time)
+);
+
+const selectedDay = selectedSlot.replace(` ${times[selectedIndex]}`, "");
+
+const contiguousSlots = [selectedSlot];
+
+// look backward
+for (let i = selectedIndex - 1; i >= 0; i--) {
+  const slot = `${selectedDay} ${times[i]}`;
+  if (currentSlots.includes(slot)) {
+    contiguousSlots.push(slot);
+  } else {
+    break;
+  }
+}
+
+// look forward
+for (let i = selectedIndex + 1; i < times.length; i++) {
+  const slot = `${selectedDay} ${times[i]}`;
+  if (currentSlots.includes(slot)) {
+    contiguousSlots.push(slot);
+  } else {
+    break;
+  }
+}
+
+contiguousSlots.forEach((slot) => {
+  updatedHosts[slot] = hostName;
+  updatedHostAddresses[slot] = hostAddress;
+});
+
+  setHosts(updatedHosts);
+  setHostAddresses(updatedHostAddresses);
+
+  localStorage.setItem("mahjongHosts", JSON.stringify(updatedHosts));
+  localStorage.setItem("mahjongHostAddresses", JSON.stringify(updatedHostAddresses));
+  setHostName("");
+setHostAddress("");
+  
+}}
+    >
+      ✅ CLICK HERE TO SAVE HOST
+    </button>
+  </div>
+)}
+  {hosts[selectedSlot] && (
+  <div style={{ background: "#c8f7d2", padding: 12, borderRadius: 10 }}>
+    <strong>Host: {hosts[selectedSlot]}</strong>
+   
+
+    <p><strong>Host address:</strong></p>
+
+    
+
+    {hostAddresses[selectedSlot] && (
+      <p>{hostAddresses[selectedSlot]}</p>
+    )}
+  </div>
+)}
+         <h3>Available players for this time</h3>
+          {selectedAvailable.map((friend) => (
+            <p key={friend.id}>
+              {friend.name} — <a href={`tel:${friend.phone}`}>{friend.phone}</a>
+            </p>
+          ))}
+          {availability[selectedFriendId]?.includes(selectedSlot) && (
+  <button
+ 
+    onClick={() => {
+  const current = availability[selectedFriendId] || [];
+  const selectedFriend = friends.find((f) => f.id === selectedFriendId);
+
+  const selectedIndex = times.findIndex((time) =>
+    selectedSlot.endsWith(time)
+  );
+
+  const selectedDay = selectedSlot.replace(` ${times[selectedIndex]}`, "");
+
+  const slotsToRemove = [selectedSlot];
+
+  for (let i = selectedIndex - 1; i >= 0; i--) {
+    const slot = `${selectedDay} ${times[i]}`;
+    if (current.includes(slot)) {
+      slotsToRemove.push(slot);
+    } else {
+      break;
+    }
+  }
+
+  for (let i = selectedIndex + 1; i < times.length; i++) {
+    const slot = `${selectedDay} ${times[i]}`;
+    if (current.includes(slot)) {
+      slotsToRemove.push(slot);
+    } else {
+      break;
+    }
+  }
+
+  const updatedAvailability = {
+    ...availability,
+    [selectedFriendId]: current.filter(
+      (item) => !slotsToRemove.includes(item)
+    ),
+  };
+
+  const updatedHosts = { ...hosts };
+  const updatedHostAddresses = { ...hostAddresses };
+
+  if (selectedFriend) {
+    const selectedFirstName = selectedFriend.name
+      .split(" ")[0]
+      .toLowerCase();
+
+    slotsToRemove.forEach((slot) => {
+      const hostFirstName = updatedHosts[slot]
+        ?.split(" ")[0]
+        .toLowerCase();
+
+      if (hostFirstName === selectedFirstName) {
+        delete updatedHosts[slot];
+        delete updatedHostAddresses[slot];
+      }
+    });
+  }
+
+  setAvailability(updatedAvailability);
+  setHosts(updatedHosts);
+  setHostAddresses(updatedHostAddresses);
+
+  localStorage.setItem(
+    "mahjongAvailability",
+    JSON.stringify(updatedAvailability)
+  );
+  localStorage.setItem("mahjongHosts", JSON.stringify(updatedHosts));
+  localStorage.setItem(
+    "mahjongHostAddresses",
+    JSON.stringify(updatedHostAddresses)
+  );
+}}
+style={{
+  background: "#f8f8f8",
+  color: "#666",
+  fontSize: "12px",
+  padding: "4px 8px",
+  border: "1px solid #ccc",
+  borderRadius: 6,
+  cursor: "pointer",
+  marginTop: 8,
+}}
+>
+  Remove myself from this game
+  </button>
+)}
+        </section>
+      )}
+    
+    </main>
+  );
+}
+
+const cellStyle: React.CSSProperties = {
+  border: "1px solid #ccc",
+  padding: 10,
+  textAlign: "center",
+};
