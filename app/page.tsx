@@ -63,7 +63,7 @@ return `${weekdayNames[date.getDay()]} ${date.getDate()}`;
   });
 }
 
-const [friends, setFriends] = useState([]);
+const [friends, setFriends] = useState<{ id: string; name: string; phone: string }[]>([]);
   
 const days = getWeekDays();
 
