@@ -1,14 +1,13 @@
 
 "use client";
+console.log("PAGE TSX LOADED");
 
 import { useState } from "react";
 import { useEffect } from "react";
 import Image from "next/image";
+import { supabase } from "./supabase";
 
-const startingFriends = [
-  { id: "1", name: "Christie Lewis", phone: "801-319-6210" },
- 
-];
+const startingFriends = [];
 
 
 const times = [
@@ -64,15 +63,33 @@ return `${weekdayNames[date.getDay()]} ${date.getDate()}`;
   });
 }
 
-const [friends, setFriends] = useState(startingFriends);
+const [friends, setFriends] = useState([]);
   
 const days = getWeekDays();
 
 useEffect(() => {
-  const savedFriends = localStorage.getItem("mahjongFriends");
-  if (savedFriends) {
-    setFriends(JSON.parse(savedFriends));
+  async function loadPlayers() {
+    const { data, error } = await supabase
+      .from("players")
+      .select("*")
+      .order("name");
+
+    if (error) {
+      console.error(error);
+      return;
+    }
+
+    const formattedPlayers =
+      data?.map((player) => ({
+        id: player.id,
+        name: player.name,
+        phone: player.Name || "",
+      })) || [];
+
+    setFriends(formattedPlayers);
   }
+
+  loadPlayers();
 }, []);
 
 
@@ -195,7 +212,9 @@ useEffect(() => {
   </div>
 </div>
 <div style={{ marginBottom: 18 }}>
-  <h2 style={{ marginBottom: 6 }}>REGISTER here if you'd like to join our group</h2>
+  <h2 style={{ marginBottom: 6, color: "red", fontWeight: "bold" }}>
+  STEP 1! REGISTER HERE if you'd like to join our group.
+</h2>
 
   
 </div>
@@ -216,24 +235,37 @@ useEffect(() => {
   />
 
   <button
-    onClick={() => {
-      if (!newName) return;
+onClick={async () => {
+  
+  if (!newName.trim()) {
+ 
+  return;
+}
 
-     const updatedFriends = [
-  ...friends,
+  const { data, error } = await supabase
+  .from("players")
+ .insert([
   {
-    id: Date.now().toString(),
-    name: newName,
-    phone: newPhone,
-  },
-];
+    name: newName.trim(),
+    Name: newPhone.trim()
+  }
+]);
 
-setFriends(updatedFriends);
-localStorage.setItem("mahjongFriends", JSON.stringify(updatedFriends));
+ if (error) {
+  alert(error.message);
+  return;
+}
 
-      setNewName("");
-      setNewPhone("");
-    }}
+const newPlayer = {
+  id: crypto.randomUUID(),
+  name: newName.trim(),
+  phone: newPhone.trim(),
+};
+
+  setFriends([...friends, newPlayer].sort((a, b) => a.name.localeCompare(b.name)));
+  setNewName("");
+  setNewPhone("");
+}}
   >
     Add Player
   </button>
@@ -241,9 +273,15 @@ localStorage.setItem("mahjongFriends", JSON.stringify(updatedFriends));
 
 
 <p>
-  SCROLL RIGHT to select your name, then CLICK on times you are available in a minimum of a 90 MINUTE BLOCK.
+  <span style={{ color: "red", fontWeight: "bold" }}>
+    STEP 2! SCROLL RIGHT
+  </span>
+  {" "}to select your name, then CLICK on times you are available in a minimum of 3 30-MINUTE BLOCKS (a 90-min block of time),
   <br />
-  SCROLL DOWN to sign up to host or remove yourself from a time block.
+  <span style={{ color: "red", fontWeight: "bold" }}>
+  SCROLL DOWN
+</span>
+{" "}to sign up to host or remove yourself from a time block.
 </p>
       {[...friends]
   .sort((a, b) =>
