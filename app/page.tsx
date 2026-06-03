@@ -196,13 +196,31 @@ useEffect(() => {
     return friends.filter((friend) => availability[friend.id]?.includes(slot));
   }
 
-  function volunteerHost() {
-    if (!selectedSlot) return;
-    setHosts({
-      ...hosts,
-      [selectedSlot]: selectedFriendId,
-    });
+ async function volunteerHost() {
+  if (!selectedSlot) return;
+
+  const selectedFriend = friends.find((friend) => friend.id === selectedFriendId);
+
+  if (!selectedFriend) {
+    alert("Please select your name first.");
+    return;
   }
+
+  await supabase.from("hosts").delete().eq("slot", selectedSlot);
+
+  await supabase.from("hosts").insert([
+    {
+      slot: selectedSlot,
+      host_name: selectedFriend.name,
+      host_address: "",
+    },
+  ]);
+
+  setHosts({
+    ...hosts,
+    [selectedSlot]: selectedFriend.name,
+  });
+}
 
   const selectedAvailable = selectedSlot ? availableFriends(selectedSlot) : [];
   const host = selectedSlot ? friends.find((friend) => friend.id === hosts[selectedSlot]) : null;
@@ -508,9 +526,19 @@ for (let i = selectedIndex + 1; i < times.length; i++) {
   }
 }
 
-contiguousSlots.forEach((slot) => {
+contiguousSlots.forEach(async (slot) => {
   updatedHosts[slot] = hostName;
   updatedHostAddresses[slot] = hostAddress;
+
+  await supabase.from("hosts").delete().eq("slot", slot);
+
+  await supabase.from("hosts").insert([
+    {
+      slot: slot,
+      host_name: hostName,
+      host_address: hostAddress,
+    },
+  ]);
 });
 
   setHosts(updatedHosts);
