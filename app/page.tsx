@@ -115,34 +115,78 @@ useEffect(() => {
   const [hostName, setHostName] = useState("");
 const [hostAddress, setHostAddress] = useState("");
 const [showPopup, setShowPopup] = useState(false);
-useEffect(() => {
-  const savedAvailability = localStorage.getItem("mahjongAvailability");
 
-  if (savedAvailability) {
-    setAvailability(JSON.parse(savedAvailability));
-  }
-}, []);
 useEffect(() => {
-  localStorage.setItem("mahjongAvailability", JSON.stringify(availability));
-}, [availability]);
-  function toggleSlot(slot: string) {
-    const current = availability[selectedFriendId] || [];
-    const isSelected = current.includes(slot);
+  async function loadAvailability() {
+    const { data, error } = await supabase
+      .from("availability")
+      .select("*");
 
-    if (!isSelected && countAvailable(slot) >= 8) {
-      setSelectedSlot(slot);
+    if (error) {
+      alert(error.message);
       return;
     }
 
-    setAvailability({
-      ...availability,
-      [selectedFriendId]: isSelected
-        ? current.filter((item) => item !== slot)
-        : [...current, slot],
+    const grouped: Record<string, string[]> = {};
+
+    data?.forEach((row) => {
+      if (!grouped[row.player_id]) {
+        grouped[row.player_id] = [];
+      }
+
+      grouped[row.player_id].push(row.slot);
     });
 
-    setSelectedSlot(slot);
+    setAvailability(grouped);
   }
+
+  loadAvailability();
+}, []);
+
+
+useEffect(() => {
+  localStorage.setItem("mahjongAvailability", JSON.stringify(availability));
+}, [availability]);
+ async function toggleSlot(slot: string) {
+  const current = availability[selectedFriendId] || [];
+  const isSelected = current.includes(slot);
+  const selectedFriend = friends.find((f) => f.id === selectedFriendId);
+
+  if (!selectedFriend) {
+    alert("Please select your name first.");
+    return;
+  }
+
+  if (!isSelected && countAvailable(slot) >= 8) {
+    setSelectedSlot(slot);
+    return;
+  }
+
+  if (isSelected) {
+    await supabase
+      .from("availability")
+      .delete()
+      .eq("player_id", selectedFriendId)
+      .eq("slot", slot);
+  } else {
+    await supabase.from("availability").insert([
+      {
+        player_id: selectedFriendId,
+        player_name: selectedFriend.name,
+        slot: slot,
+      },
+    ]);
+  }
+
+  setAvailability({
+    ...availability,
+    [selectedFriendId]: isSelected
+      ? current.filter((item) => item !== slot)
+      : [...current, slot],
+  });
+
+  setSelectedSlot(slot);
+}
 
   function countAvailable(slot: string) {
     return friends.filter((friend) => availability[friend.id]?.includes(slot)).length;
@@ -213,7 +257,7 @@ useEffect(() => {
 </div>
 <div style={{ marginBottom: 18 }}>
   <h2 style={{ marginBottom: 6, color: "red", fontWeight: "bold" }}>
-  STEP 1! REGISTER HERE if you'd like to join our group.
+  STEP 1 - REGISTER HERE if you'd like to join our group.
 </h2>
 
   
@@ -274,7 +318,7 @@ const newPlayer = {
 
 <p>
   <span style={{ color: "red", fontWeight: "bold" }}>
-    STEP 2! SCROLL RIGHT
+    STEP 2 - SCROLL RIGHT
   </span>
   {" "}to select your name, then CLICK on times you are available in a minimum of 3 30-MINUTE BLOCKS (a 90-min block of time),
   <br />
