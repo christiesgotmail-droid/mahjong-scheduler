@@ -75,9 +75,10 @@ useEffect(() => {
       .order("name");
 
     if (error) {
-      console.error(error);
-      return;
-    }
+  alert("Players did not load: " + error.message);
+  console.error(error);
+  return;
+}
 
     const formattedPlayers =
       data?.map((player) => ({
@@ -100,16 +101,30 @@ useEffect(() => {
   const [availability, setAvailability] = useState<Record<string, string[]>>({});
   const [hosts, setHosts] = useState<Record<string, string>>({});
   const [hostAddresses, setHostAddresses] = useState<Record<string, string>>({});
-  useEffect(() => {
-  const savedHosts = localStorage.getItem("mahjongHosts");
-  if (savedHosts) {
-    setHosts(JSON.parse(savedHosts));
+useEffect(() => {
+  async function loadHosts() {
+    const { data, error } = await supabase
+      .from("hosts")
+      .select("*");
+
+    if (error) {
+      alert(error.message);
+      return;
+    }
+
+    const loadedHosts: Record<string, string> = {};
+    const loadedHostAddresses: Record<string, string> = {};
+
+    data?.forEach((row) => {
+      loadedHosts[row.slot] = row.host_name;
+      loadedHostAddresses[row.slot] = row.host_address || "";
+    });
+
+    setHosts(loadedHosts);
+    setHostAddresses(loadedHostAddresses);
   }
 
-  const savedHostAddresses = localStorage.getItem("mahjongHostAddresses");
-  if (savedHostAddresses) {
-    setHostAddresses(JSON.parse(savedHostAddresses));
-  }
+  loadHosts();
 }, []);
   const [selectedSlot, setSelectedSlot] = useState("");
   const [hostName, setHostName] = useState("");
@@ -163,11 +178,22 @@ useEffect(() => {
   }
 
   if (isSelected) {
-    await supabase
-      .from("availability")
-      .delete()
-      .eq("player_id", selectedFriendId)
-      .eq("slot", slot);
+   const { error } = await supabase
+  .from("availability")
+  .delete()
+  .eq("player_id", selectedFriendId)
+  .eq("slot", slot);
+
+if (error) {
+  alert("Delete failed: " + error.message);
+  return;
+}
+
+await supabase
+  .from("hosts")
+  .delete()
+  .eq("slot", slot)
+  .eq("host_name", selectedFriend.name);
   } else {
     await supabase.from("availability").insert([
       {
@@ -184,10 +210,27 @@ useEffect(() => {
       ? current.filter((item) => item !== slot)
       : [...current, slot],
   });
+if (isSelected && hosts[slot] === selectedFriend.name) {
+  const updatedHosts = { ...hosts };
+  const updatedHostAddresses = { ...hostAddresses };
 
-  setSelectedSlot(slot);
+  Object.keys(updatedHosts).forEach((hostSlot) => {
+    if (updatedHosts[hostSlot] === selectedFriend.name) {
+      delete updatedHosts[hostSlot];
+      delete updatedHostAddresses[hostSlot];
+
+      supabase
+        .from("hosts")
+        .delete()
+        .eq("slot", hostSlot)
+        .eq("host_name", selectedFriend.name);
+    }
+  });
+
+  setHosts(updatedHosts);
+  setHostAddresses(updatedHostAddresses);
 }
-
+}
   function countAvailable(slot: string) {
     return friends.filter((friend) => availability[friend.id]?.includes(slot)).length;
   }
@@ -398,13 +441,15 @@ const newPlayer = {
                       key={slot}
 onClick={() => {
   const current = availability[selectedFriendId] || [];
+  const alreadySelected = current.includes(slot);
 
-  if (!current.includes(slot)) {
-    toggleSlot(slot);
-  }
+  toggleSlot(slot);
 
   setSelectedSlot(slot);
-  setShowPopup(true);
+
+  if (!alreadySelected) {
+    setShowPopup(true);
+  }
 }}
 
 
@@ -540,6 +585,7 @@ contiguousSlots.forEach(async (slot) => {
     },
   ]);
 });
+
 
   setHosts(updatedHosts);
   setHostAddresses(updatedHostAddresses);
