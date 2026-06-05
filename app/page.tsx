@@ -42,6 +42,55 @@ const resetAllData = () => {
   localStorage.clear();
   window.location.reload();
 };
+
+function getConnectedSlots(slot: string, slotsToCheck: string[]) {
+  const selectedIndex = times.findIndex((time) => slot.endsWith(time));
+
+  if (selectedIndex === -1) {
+    return [slot];
+  }
+
+  const selectedDay = slot.replace(` ${times[selectedIndex]}`, "");
+  const connectedSlots = [slot];
+
+  for (let i = selectedIndex - 1; i >= 0; i--) {
+    const connectedSlot = `${selectedDay} ${times[i]}`;
+
+    if (slotsToCheck.includes(connectedSlot)) {
+      connectedSlots.push(connectedSlot);
+    } else {
+      break;
+    }
+  }
+
+  for (let i = selectedIndex + 1; i < times.length; i++) {
+    const connectedSlot = `${selectedDay} ${times[i]}`;
+
+    if (slotsToCheck.includes(connectedSlot)) {
+      connectedSlots.push(connectedSlot);
+    } else {
+      break;
+    }
+  }
+
+  return connectedSlots;
+}
+
+function isSameHost(playerName: string, hostName?: string) {
+  if (!hostName) {
+    return false;
+  }
+
+  if (hostName === playerName) {
+    return true;
+  }
+
+  return (
+    hostName.split(" ")[0].toLowerCase() ===
+    playerName.split(" ")[0].toLowerCase()
+  );
+}
+
 export default function Home() {
   
   const [weekOffset, setWeekOffset] = useState(0);
@@ -177,23 +226,37 @@ useEffect(() => {
     return;
   }
 
+  const hostedSlots = Object.keys(hosts).filter((hostSlot) =>
+    isSameHost(selectedFriend.name, hosts[hostSlot])
+  );
+  const hostSlotsToRemove =
+    isSelected && isSameHost(selectedFriend.name, hosts[slot])
+      ? getConnectedSlots(slot, hostedSlots)
+      : [];
+
   if (isSelected) {
-   const { error } = await supabase
-  .from("availability")
-  .delete()
-  .eq("player_id", selectedFriendId)
-  .eq("slot", slot);
+    const { error } = await supabase
+      .from("availability")
+      .delete()
+      .eq("player_id", selectedFriendId)
+      .eq("slot", slot);
 
-if (error) {
-  alert("Delete failed: " + error.message);
-  return;
-}
+    if (error) {
+      alert("Delete failed: " + error.message);
+      return;
+    }
 
-await supabase
-  .from("hosts")
-  .delete()
-  .eq("slot", slot)
-  .eq("host_name", selectedFriend.name);
+    if (hostSlotsToRemove.length > 0) {
+      const { error: hostDeleteError } = await supabase
+        .from("hosts")
+        .delete()
+        .in("slot", hostSlotsToRemove);
+
+      if (hostDeleteError) {
+        alert("Host delete failed: " + hostDeleteError.message);
+        return;
+      }
+    }
   } else {
     await supabase.from("availability").insert([
       {
@@ -210,26 +273,19 @@ await supabase
       ? current.filter((item) => item !== slot)
       : [...current, slot],
   });
-if (isSelected && hosts[slot] === selectedFriend.name) {
-  const updatedHosts = { ...hosts };
-  const updatedHostAddresses = { ...hostAddresses };
 
-  Object.keys(updatedHosts).forEach((hostSlot) => {
-    if (updatedHosts[hostSlot] === selectedFriend.name) {
+  if (hostSlotsToRemove.length > 0) {
+    const updatedHosts = { ...hosts };
+    const updatedHostAddresses = { ...hostAddresses };
+
+    hostSlotsToRemove.forEach((hostSlot) => {
       delete updatedHosts[hostSlot];
       delete updatedHostAddresses[hostSlot];
+    });
 
-      supabase
-        .from("hosts")
-        .delete()
-        .eq("slot", hostSlot)
-        .eq("host_name", selectedFriend.name);
-    }
-  });
-
-  setHosts(updatedHosts);
-  setHostAddresses(updatedHostAddresses);
-}
+    setHosts(updatedHosts);
+    setHostAddresses(updatedHostAddresses);
+  }
 }
   function countAvailable(slot: string) {
     return friends.filter((friend) => availability[friend.id]?.includes(slot)).length;
@@ -318,7 +374,7 @@ if (isSelected && hosts[slot] === selectedFriend.name) {
 </div>
 <div style={{ marginBottom: 18 }}>
   <h2 style={{ marginBottom: 6, color: "red", fontWeight: "bold" }}>
-  STEP 1 - REGISTER HERE if you'd like to join our group.
+  STEP 1 - REGISTER HERE if you&apos;d like to join our group.
 </h2>
 
   
