@@ -326,11 +326,9 @@ useEffect(() => {
 
   return (
   <main
+  className="app-shell"
   style={{
-    padding: 20,
     fontFamily: "Arial, sans-serif",
-    maxWidth: 850,
-    margin: "0 auto",
   }}
 >
 
@@ -435,14 +433,16 @@ const newPlayer = {
 
 <p>
   <span style={{ color: "red", fontWeight: "bold" }}>
-    STEP 2 - SCROLL RIGHT
+    STEP 2 - SELECT YOUR NAME
   </span>
-  {" "}to select your name, then CLICK on times you are available in a minimum of 3 30-MINUTE BLOCKS (a 90-min block of time),
+  {" "}from the row below, then CLICK on times you are available in a minimum of 3 30-MINUTE BLOCKS (a 90-min block of time).
+  <br />
+  Click a selected time again to remove yourself. If you are hosting that connected block, hosting will be removed too.
   <br />
   <span style={{ color: "red", fontWeight: "bold" }}>
   SCROLL DOWN
 </span>
-{" "}to sign up to host or remove yourself from a time block.
+{" "}after selecting a time to sign up to host.
 </p>
       <div
         style={{
@@ -476,15 +476,16 @@ const newPlayer = {
       ))}
       </div>
 
-      <h2>Schedule</h2>
-      <div style={{ marginBottom: 12 }}>
+      <div className="schedule-full-width">
+      <h2 className="schedule-heading">Schedule</h2>
+      <div className="schedule-controls" style={{ marginBottom: 12 }}>
   <button onClick={() => setWeekOffset(weekOffset - 1)}>← Previous Week</button>
   <button onClick={() => setWeekOffset(weekOffset + 1)} style={{ marginLeft: 10 }}>
     Next Week →
   </button>
 </div>
-      <div style={{ overflowX: "auto" }}>
-        <table style={{ borderCollapse: "collapse", minWidth: 600 }}>
+      <div style={{ width: "100%" }}>
+        <table style={{ borderCollapse: "collapse", tableLayout: "fixed", width: "100%" }}>
           <thead>
             <tr>
               <th style={cellStyle}>Time</th>
@@ -552,6 +553,7 @@ background:
             ))}
           </tbody>
         </table>
+      </div>
       </div>
 
       {selectedSlot && (
@@ -785,6 +787,8 @@ style={{
 
 const cellStyle: React.CSSProperties = {
   border: "1px solid #ccc",
-  padding: 10,
+  fontSize: "var(--schedule-cell-font-size)",
+  overflowWrap: "anywhere",
+  padding: "var(--schedule-cell-padding)",
   textAlign: "center",
 };
