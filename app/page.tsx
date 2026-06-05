@@ -444,6 +444,16 @@ const newPlayer = {
 </span>
 {" "}to sign up to host or remove yourself from a time block.
 </p>
+      <div
+        style={{
+          display: "flex",
+          gap: 8,
+          marginBottom: 16,
+          overflowX: "auto",
+          paddingBottom: 8,
+          whiteSpace: "nowrap",
+        }}
+      >
       {[...friends]
   .sort((a, b) =>
     a.name.localeCompare(b.name)
@@ -453,17 +463,18 @@ const newPlayer = {
           key={friend.id}
           onClick={() => setSelectedFriendId(friend.id)}
           style={{
-            margin: 4,
             padding: "10px 14px",
             borderRadius: 20,
             border: "1px solid #999",
             background: selectedFriendId === friend.id ? "#123" : "#eee",
             color: selectedFriendId === friend.id ? "white" : "black",
+            flex: "0 0 auto",
           }}
         >
           {friend.name}
         </button>
       ))}
+      </div>
 
       <h2>Schedule</h2>
       <div style={{ marginBottom: 12 }}>
