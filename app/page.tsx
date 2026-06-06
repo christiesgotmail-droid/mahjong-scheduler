@@ -96,7 +96,7 @@ export default function Home() {
   const [weekOffset, setWeekOffset] = useState(0);
 
 function getWeekDays() {
-  const today = new Date("2026-05-24");
+  const today = new Date();
   const day = today.getDay();
   const mondayOffset = day === 0 ? -6 : 1 - day;
 
@@ -107,8 +107,9 @@ function getWeekDays() {
     const date = new Date(monday);
     date.setDate(monday.getDate() + index);
 
+   const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
    const weekdayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-return `${weekdayNames[date.getDay()]} ${date.getDate()}`;
+return `${weekdayNames[date.getDay()]} ${monthNames[date.getMonth()]} ${date.getDate()}`;
   });
 }
 
@@ -394,6 +395,7 @@ useEffect(() => {
   />
 
   <button
+style={actionButtonStyle}
 onClick={async () => {
   
   if (!newName.trim()) {
@@ -433,11 +435,11 @@ const newPlayer = {
 
 <p>
   <span style={{ color: "red", fontWeight: "bold" }}>
-    STEP 2 - SELECT YOUR NAME
-  </span>
+    STEP 2 - SCROLL RIGHT</span> to select your name
+  
   {" "}from the row below, then CLICK on times you are available in a minimum of 3 30-MINUTE BLOCKS (a 90-min block of time).
   <br />
-  Click a selected time again to remove yourself. If you are hosting that connected block, hosting will be removed too.
+  Click a selected time again to remove yourself from play/hosting.
   <br />
   <span style={{ color: "red", fontWeight: "bold" }}>
   SCROLL DOWN
@@ -526,10 +528,10 @@ onClick={() => {
                         ...cellStyle,
                         cursor: "pointer",
 background:
-  count >= 4
-    ? "#b7eb8f"
-    : mine
+  mine
     ? "#b7d7ff"
+    : count >= 4
+    ? "#b7eb8f"
     : count === 3
     ? "#ffe7ba"
     : count === 2
@@ -606,6 +608,7 @@ background:
     />
 
     <button
+      style={fullActionButtonStyle}
       onClick={() => {
  const updatedHosts = { ...hosts };
 const updatedHostAddresses = { ...hostAddresses };
@@ -666,7 +669,7 @@ setHostAddress("");
   
 }}
     >
-      ✅ CLICK HERE TO SAVE HOST
+      Save Host
     </button>
   </div>
 )}
@@ -686,9 +689,23 @@ setHostAddress("");
 )}
          <h3>Available players for this time</h3>
           {selectedAvailable.map((friend) => (
-            <p key={friend.id}>
-              {friend.name} — <a href={`tel:${friend.phone}`}>{friend.phone}</a>
-            </p>
+            <div
+              key={friend.id}
+              style={{
+                borderBottom: "1px solid #eee",
+                display: "flex",
+                gap: 12,
+                justifyContent: "space-between",
+                padding: "8px 0",
+              }}
+            >
+              <strong>{friend.name}</strong>
+              {friend.phone ? (
+                <a href={`tel:${friend.phone}`}>{friend.phone}</a>
+              ) : (
+                <span style={{ color: "#666" }}>No phone listed</span>
+              )}
+            </div>
           ))}
           {availability[selectedFriendId]?.includes(selectedSlot) && (
   <button
@@ -791,4 +808,22 @@ const cellStyle: React.CSSProperties = {
   overflowWrap: "anywhere",
   padding: "var(--schedule-cell-padding)",
   textAlign: "center",
+};
+
+const actionButtonStyle: React.CSSProperties = {
+  background: "#123",
+  border: "1px solid #123",
+  borderRadius: 8,
+  boxShadow: "0 2px 6px rgba(0, 0, 0, 0.18)",
+  color: "white",
+  cursor: "pointer",
+  fontWeight: 700,
+  minHeight: 38,
+  padding: "9px 14px",
+};
+
+const fullActionButtonStyle: React.CSSProperties = {
+  ...actionButtonStyle,
+  marginTop: 4,
+  width: "100%",
 };
