@@ -12,9 +12,28 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const siteUrl =
+  process.env.NEXT_PUBLIC_SITE_URL ||
+  (process.env.VERCEL_PROJECT_PRODUCTION_URL
+    ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+    : process.env.VERCEL_URL
+    ? `https://${process.env.VERCEL_URL}`
+    : "http://localhost:3000");
+
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
   title: "Alpine Mahjong",
   description: "A scheduler for Alpine Mahjong players",
+  openGraph: {
+    title: "Alpine Mahjong",
+    description: "A scheduler for Alpine Mahjong players",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Alpine Mahjong",
+    description: "A scheduler for Alpine Mahjong players",
+  },
 };
 
 export default function RootLayout({
